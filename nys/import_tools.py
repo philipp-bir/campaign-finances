@@ -1,4 +1,4 @@
-from .models import Filer,CommitteeType, Report, Purpose
+from .models import Filer,CommitteeType, Report, Purpose, Office, Municipality, County
 
 import re
 from django.utils import timezone
@@ -6,6 +6,7 @@ from dateutil.parser import parse as parse_datetime
 import dateutil.tz
 import os
 import traceback
+import csv
 
 c=0
 FILER_ID=c
@@ -41,7 +42,7 @@ def insert_row(row):
         raise Exception("Wrong length %d"%len(row))
     row=[w.strip() for w in row]
     ct,__=CommitteeType.objects.get_or_create(name=row[COMMITTEE_TYPE])
-    office=int(row[OFFICE]) if row[OFFICE] else None
+    office,__=Office.objects.get_or_create(id=int(row[OFFICE])) if row[OFFICE] else (None,None)
     district=int(row[DISTRICT])if row[DISTRICT] else None
     if row[STATUS].upper()=="ACTIVE":
         status=Filer.FILER_ACTIVE
@@ -57,8 +58,8 @@ def insert_row(row):
     else:
         filer_type=None
         print("Unknown filer type %s"%row[FILER_TYPE])
-    Filer.objects.get_or_create(filer_id=row[FILER_ID], filer_name=row[FILER_NAME],
-                                         filer_type=filer_type, filer_status=status,
+    Filer.objects.get_or_create(filer_id=row[FILER_ID], name=row[FILER_NAME],
+                                         filer_type=filer_type, status=status,
                                          committee_type=ct, office=office, district=district,
                                          treasurer_first_name=row[TREAS_FIRST_NAME], treasurer_last_name=row[TREAS_LAST_NAME],
                                          address=row[ADDRESS],city=row[CITY],state=row[STATE],
@@ -277,3 +278,51 @@ def import_reports_csv(file_name,out_file_name=os.devnull,start_with=0):
             except:
                 print(traceback.format_exc())
                 print("Line %d"%i)
+                
+                
+                
+                
+                
+def import_county_filers_csv(file_name):
+    with open(file_name) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for i,row in enumerate(reader):
+            if i%1000==0:
+                print("Row #%d"%i)
+            #print(row)
+            #return
+            try:
+                f=Filer.objects.get(filer_id=row["Filer ID"])
+                if f.name!=row["Name"].strip():
+                    print("Name not the same with filer %s"%row["Filer ID"])
+                    print("'%s' - '%s'"%(f.name,row["Name"].strip()) )
+                if f.office is not None and len(f.office.name)==0:
+                    f.office.name=row["Office"]
+                    print("Office #%d is '%s'"%(f.office.id,f.office.name))
+                    f.office.save()
+                elif (f.office is None and row["Office"]!="N/A") or (f.office is not None and str(f.office.name)!=row["Office"]):
+                    print("Office not the same with filer %s"%row["Filer ID"])
+                    print("'%s' - '%s'"%(f.office.name,row["Office"]) )
+                if (f.district is None and row["District"]!="N/A") or (f.district is not None and str(f.district)!=row["District"]):
+                    print("District not the same with filer %s"%row["Filer ID"])
+                    print("'%s' - '%s'"%(f.district,row["District"]) )
+                county,__=County.objects.get_or_create(name=row["County"])
+                if row["Municipality"]=="N/A":
+                    row["Municipality"]=""
+                if row["Subdivision"]=="N/A":
+                    row["Subdivision"]=""
+                f.municipality,__ = Municipality.objects.get_or_create(name=row["Municipality"],county=county,subdivision=row["Subdivision"])
+                f.save()
+            except KeyboardInterrupt:
+                return
+            except:
+                print(traceback.format_exc())
+                print(row["Filer ID"])
+        
+        
+pass
+        
+        
+        
+        
+        

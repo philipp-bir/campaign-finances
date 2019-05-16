@@ -7,19 +7,35 @@ class CommitteeType(models.Model):
     
     def __str__(self):
         return str(self.name)
+        
+class Office(models.Model):
+    
+    name = models.TextField()
+
+class County(models.Model):
+    
+    name = models.TextField()
+    
+
+class Municipality(models.Model):
+    
+    name = models.TextField(blank=True)
+    county = models.ForeignKey(County,on_delete=models.CASCADE)
+    subdivision = models.TextField(blank=True)
 
 class Filer(models.Model):
     
     filer_id = models.CharField(max_length=8)
-    filer_name = models.TextField()
+    name = models.TextField()
     FILER_COMMITTEE="O"
     FILER_CANDIDATE="A"
     filer_type = models.CharField(max_length=1,choices=((FILER_COMMITTEE,"Committee"),(FILER_CANDIDATE,"Candidate")))
     FILER_INACTIVE="I"
     FILER_ACTIVE="A"
-    filer_status = models.CharField(max_length=1,choices=((FILER_INACTIVE,"Inactive"),(FILER_ACTIVE,"Active")))
+    status = models.CharField(max_length=1,choices=((FILER_INACTIVE,"Inactive"),(FILER_ACTIVE,"Active")))
     committee_type = models.ForeignKey(CommitteeType,null=True,on_delete=models.CASCADE)
-    office = models.IntegerField(null=True)
+   # office_id_lk = models.IntegerField(null=True)
+    office = models.ForeignKey(Office,null=True,on_delete = models.CASCADE)
     district = models.IntegerField(null=True)
     treasurer_first_name = models.TextField(blank=True)
     treasurer_last_name = models.TextField(blank=True)
@@ -27,6 +43,19 @@ class Filer(models.Model):
     city = models.TextField(blank=True)
     state = models.TextField(blank=True)
     zipcode = models.TextField(blank=True)
+    municipality = municipality = models.ForeignKey(Municipality,null=True,on_delete=models.CASCADE)
+
+ 
+
+    
+
+    
+#class CountyFiler(Filer):
+    
+    #county = models.ForeignKey(County,on_delete=models.CASCADE)
+#    municipality = models.ForeignKey(Municipality,on_delete=models.CASCADE)
+    #district = models.IntegerField(null=True)
+    
     
 class Purpose(models.Model):
     
@@ -68,6 +97,39 @@ class Report(models.Model):
     user_id = models.CharField(max_length=8, blank=True)
     record_creation_datetime = models.DateTimeField(null=True)
     
+    def to_dict(self):
+        d["filer_id"] = filer.filer_id
+        d["filer_report_id"] = filer_report_id
+        d["transaction_code"] = transaction_code
+        d["election_year"] = election_year
+        d["transaction_id"] = transaction_id
+        d["date"] = date
+        d["date_original"] = date_original
+        d["contributor_code"] = contributor_code
+        d["contribution_type"] = contribution_type
+        d["corporation_name"] = corporation_name
+        d["contributor_first_name"] = contributor_first_name
+        d["contributor_mid_initial"] = contributor_mid_initial
+        d["contributor_last_name"] = contributor_last_name
+        d["contributor_address"] = contributor_address
+        d["contributor_city"] = contributor_city
+        d["contributor_state"] = contributor_state
+        d["contributor_zip"] = contributor_zip
+        d["check_number"] = check_number
+        d["check_date"] = check_date
+        d["amount"] = amount
+        d["amount_additional"] = amount_additional
+        d["description"] = description
+        d["other_receipt_code"] = other_receipt_code
+        d["purpose_code"] = purpose_code.code
+        d["purpose_code_q"] = purpose_code_q.code
+        d["explanation"] = explanation
+        d["transfer_type"] = transfer_type
+        d["checkbox"] = checkbox
+        d["user_id"] = user_id
+        d["record_creation_datetime"] = record_creation_datetime
+        
+    
     @staticmethod
     def init_from_dict(d):
         return Report(filer = d["filer"],
@@ -101,4 +163,4 @@ class Report(models.Model):
                     user_id = d["user_id"],
                     record_creation_datetime = d["record_creation_datetime"]
                 )
-        
+

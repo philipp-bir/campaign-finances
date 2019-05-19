@@ -98,36 +98,38 @@ class Report(models.Model):
     record_creation_datetime = models.DateTimeField(null=True)
     
     def to_dict(self):
-        d["filer_id"] = filer.filer_id
-        d["filer_report_id"] = filer_report_id
-        d["transaction_code"] = transaction_code
-        d["election_year"] = election_year
-        d["transaction_id"] = transaction_id
-        d["date"] = date
-        d["date_original"] = date_original
-        d["contributor_code"] = contributor_code
-        d["contribution_type"] = contribution_type
-        d["corporation_name"] = corporation_name
-        d["contributor_first_name"] = contributor_first_name
-        d["contributor_mid_initial"] = contributor_mid_initial
-        d["contributor_last_name"] = contributor_last_name
-        d["contributor_address"] = contributor_address
-        d["contributor_city"] = contributor_city
-        d["contributor_state"] = contributor_state
-        d["contributor_zip"] = contributor_zip
-        d["check_number"] = check_number
-        d["check_date"] = check_date
-        d["amount"] = amount
-        d["amount_additional"] = amount_additional
-        d["description"] = description
-        d["other_receipt_code"] = other_receipt_code
-        d["purpose_code"] = purpose_code.code
-        d["purpose_code_q"] = purpose_code_q.code
-        d["explanation"] = explanation
-        d["transfer_type"] = transfer_type
-        d["checkbox"] = checkbox
-        d["user_id"] = user_id
-        d["record_creation_datetime"] = record_creation_datetime
+        d={}
+        d["filer_id"] = self.filer.filer_id
+        d["filer_report_id"] = self.filer_report_id
+        d["transaction_code"] = self.transaction_code
+        d["election_year"] = self.election_year
+        d["transaction_id"] = self.transaction_id
+        #d["date"] = self.date
+        #d["date_original"] = self.date_original
+        d["contributor_code"] = self.contributor_code
+        d["contribution_type"] = self.contribution_type
+        d["corporation_name"] = self.corporation_name
+        d["contributor_first_name"] = self.contributor_first_name
+        d["contributor_mid_initial"] = self.contributor_mid_initial
+        d["contributor_last_name"] = self.contributor_last_name
+        d["contributor_address"] = self.contributor_address
+        d["contributor_city"] = self.contributor_city
+        d["contributor_state"] = self.contributor_state
+        d["contributor_zip"] = self.contributor_zip
+        d["check_number"] = self.check_number
+        # d["check_date"] = self.check_date
+        #d["amount"] = self.amount
+        #d["amount_additional"] = self.amount_additional
+        d["description"] = self.description
+        d["other_receipt_code"] = self.other_receipt_code
+        d["purpose_code"] = self.purpose_code.code if self.purpose_code else None
+      #  d["purpose_code_q"] = self.purpose_code_q.code if self.purpose_code_q else None
+        d["explanation"] = self.explanation
+        d["transfer_type"] = self.transfer_type
+        d["checkbox"] = self.checkbox
+        d["user_id"] = self.user_id
+       # d["record_creation_datetime"] = self.record_creation_datetime
+        return d
         
     
     @staticmethod

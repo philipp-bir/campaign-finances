@@ -2,6 +2,7 @@ import json
 
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.urls import reverse
 
 from .models import Municipality, Filer, Report
 
@@ -35,11 +36,50 @@ def municipality_contributions_year(request,municipality_id,year):
 def json_municipality_contributions_year(request,municipality_id,year):
     filers=Filer.objects.filter(municipality_id=municipality_id)
     #print(list(filers))
-    reports=Report.objects.filter(filer_id__in=filers).filter(election_year=year).filter(transaction_code__in=["A","B","C"]).select_related("filer").select_related("purpose_code")
+    reports=(Report.objects.filter(filer_id__in=filers)
+                           .filter(election_year=year)
+                           .filter(transaction_code__in=["A","B","C"])
+                           .select_related("filer")
+                           .select_related("purpose_code")
+                           .select_related("purpose_code_q")
+            )
     d={}
     for r in reports:
         if r.filer_id not in d:
-            d[r.filer_id]={"A":0.,"B":0.,"C":0.,"name":r.filer.name}
+            links={}
+            for c in ["A","B","C"]:
+                links[c]=reverse("filers_contributions_year_type",kwargs={"filer_id":r.filer_id,"year":year,"t_code":c})
+            d[r.filer_id]={"A":0.,"B":0.,"C":0.,"meta":{"name":r.filer.name,"count":{"A":0,"B":0,"C":0},"link":links}}
         d[r.filer_id][r.transaction_code]+=float(r.amount)
+        d[r.filer_id]["meta"]["count"][r.transaction_code]+=1
+    for k in d:
+        d[k]["meta"]["desc"]={c:"$%.02f in %d contributions."%(d[k][c],d[k]["meta"]["count"][c]) for c in "ABC"}
     w=[d[k] for k in d]
     return HttpResponse(json.dumps(w))
+
+def filers_contributions_year(request,filer_id,year,t_code=None):
+    context={"filer":filer_id,"year":year,"t_code":t_code}
+    return render(request, 'nys/pie_chart.html', context)
+
+def json_filers_contributions_year(request,filer_id,year,t_code=None):
+    reports=Report.objects.filter(filer_id=filer_id).filter(election_year=year)
+    if t_code:
+        reports=reports.filter(transaction_code=t_code)
+    else:
+        reports=reports.filter(transaction_code__in=["A","B","C"]) #potentially relax to all that are about money received
+    reports=reports.select_related("filer").select_related("purpose_code").select_related("purpose_code_q")
+    d={}
+    for r in reports:
+        cc=r.contributor_code
+        if cc not in d:
+            d[cc]={"value":0,"number":0,"label":cc}
+        d[cc]["value"]+=float(r.amount)
+        d[cc]["number"]+=1
+    return HttpResponse(json.dumps(list(d.values())))
+    
+    
+    
+    
+    
+    
+    

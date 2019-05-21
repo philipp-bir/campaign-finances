@@ -30,7 +30,7 @@ def json_municipality_year(request,municipality_id,year):
     return HttpResponse("<body>"+json.dumps([r.to_dict() for r in reports])+"</body>")
 
 def municipality_contributions_year(request,municipality_id,year):
-    context={"municipality":municipality_id,"year":year}
+    context={"municipality":Municipality.objects.get(pk=municipality_id),"year":year}
     return render(request, 'nys/chart.html', context)
 
 def json_municipality_contributions_year(request,municipality_id,year):
@@ -53,12 +53,21 @@ def json_municipality_contributions_year(request,municipality_id,year):
         d[r.filer_id][r.transaction_code]+=float(r.amount)
         d[r.filer_id]["meta"]["count"][r.transaction_code]+=1
     for k in d:
-        d[k]["meta"]["desc"]={c:"$%.02f in %d contributions."%(d[k][c],d[k]["meta"]["count"][c]) for c in "ABC"}
-    w=[d[k] for k in d]
-    return HttpResponse(json.dumps(w))
+        d[k]["meta"]["desc"]={c:"$%.02f in %d contributions"%(d[k][c],d[k]["meta"]["count"][c]) for c in "ABC"}
+    #w=[d[k] for k in d]
+    response={"data":list(d.values()),"meta":{"A":"Individual & Partnerships","B":"Corporate","C":"All Other"}}
+    return HttpResponse(json.dumps(response))
 
 def filers_contributions_year(request,filer_id,year,t_code=None):
-    context={"filer":filer_id,"year":year,"t_code":t_code}
+    filer=Filer.objects.get(pk=filer_id)
+    
+    reports=Report.objects.filter(filer_id=filer_id).filter(election_year=year)
+    if t_code:
+        reports=reports.filter(transaction_code=t_code)
+    else:
+        reports=reports.filter(transaction_code__in=["A","B","C"]) 
+    reports=reports.select_related("filer").select_related("purpose_code").select_related("purpose_code_q").order_by("-amount")
+    context={"filer":filer,"year":year,"t_code":t_code,"t_code_desc":{"A":"Individual & Partnerships","B":"Corporate","C":"All Other"}[t_code] if t_code else None,"reports":reports}
     return render(request, 'nys/pie_chart.html', context)
 
 def json_filers_contributions_year(request,filer_id,year,t_code=None):
@@ -75,6 +84,8 @@ def json_filers_contributions_year(request,filer_id,year,t_code=None):
             d[cc]={"value":0,"number":0,"label":cc}
         d[cc]["value"]+=float(r.amount)
         d[cc]["number"]+=1
+    for k in d:
+        d[k]["desc"]="$%.02f in %d contributions with code '%s'"%(d[k]["value"],d[k]["number"],k)
     return HttpResponse(json.dumps(list(d.values())))
     
     

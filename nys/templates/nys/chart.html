@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- https://stackoverflow.com/questions/32298844/d3-js-stacked-bar-chart-from-vertical-to-horizontal-->
+<head>
 <style>
 
 body {
@@ -21,7 +22,7 @@ body {
   display: none;
 }
 
-rect:hover {  opacity:0.9; }
+rect:hover {  opacity:0.7; }
 
 
 div.tooltip {   
@@ -38,7 +39,10 @@ div.tooltip {
 }
 
 </style>
+<title>Contributions in {{municipality.name}} in {{year}}</title>
+</head>
 <body>
+<h2>Contributions in {{municipality.name}} in {{year}}</h2>
 </body>
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script>
@@ -48,13 +52,13 @@ div.tooltip {
   xmlhttp.onload = function() {
     var json_resp=xmlhttp.response;
     //console.log(json_resp);
-    barplot(json_resp);
+    barplot(json_resp.data,json_resp.meta);
   };
-  xmlhttp.open("GET", "{% url 'json_municipality_year' municipality year %}", true);
+  xmlhttp.open("GET", "{% url 'json_municipality_year' municipality.id year %}", true);
   xmlhttp.send();
     
-var margin = {top: 20, right: 60, bottom: 30, left: 300},
-    width = 960 - margin.left - margin.right,
+var margin = {top: 20, right: 200, bottom: 30, left: 300},
+    width = 1200 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
 var y = d3.scale.ordinal()
@@ -86,7 +90,7 @@ var div = d3.select("body").append("div")
     .attr("class", "tooltip")               
     .style("opacity", 0);
 
-barplot = function(data){
+barplot = function(data,meta){
 
   color.domain(d3.keys(data[0]).filter(function(key) { return key !== "meta"; }));
 
@@ -148,23 +152,23 @@ barplot = function(data){
         });
 
   var legend = svg.selectAll(".legend")
-      .data(color.domain().slice().reverse())
+      .data(color.domain().slice())
     .enter().append("g")
       .attr("class", "legend")
       .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
   legend.append("rect")
-      .attr("x", width + 6 + 18)
+      .attr("x", width + 6)
       .attr("width", 18)
       .attr("height", 18)
       .style("fill", color);
 
   legend.append("text")
-      .attr("x", width+18)
+      .attr("x", width+18 +18)
       .attr("y", 9)
       .attr("dy", ".35em")
-      .style("text-anchor", "end")
-      .text(function(d) { return d; });
+      //.style("text-anchor", "end")
+      .text(function(d) { return meta[d]; });
 
 };
 </script>

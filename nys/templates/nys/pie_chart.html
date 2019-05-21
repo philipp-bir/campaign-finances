@@ -3,19 +3,80 @@
 <html>
   <head>    
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
-    <title>Testing Pie Chart</title>
+    <title>Contributions {% if t_code_desc %}from {{t_code_desc}} {% endif %} to {{filer.name}} in {{year}}</title>
     <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?2.1.3"></script>
     <script type="text/javascript" src="http://mbostock.github.com/d3/d3.geom.js?2.1.3"></script>
     <script type="text/javascript" src="http://mbostock.github.com/d3/d3.layout.js?2.1.3"></script>
-
+    <script src="https://kryogenix.org/code/browser/sorttable/sorttable.js"></script>
     <style type="text/css">
         .slice text {
             font-size: 16pt;
             font-family: Arial;
-        }   
+        }
+        
+        .slice:hover {  opacity:0.7; }
+
+
+div.tooltip {   
+    position: absolute;         
+    text-align: center;         
+    /* width: 60px;                    
+    //height: 28px;        */            
+    padding: 2px;               
+    /* font: 12px sans-serif;  */    
+    background: #4baf4f; 
+    border: 0px;        
+    border-radius: 8px;         
+    pointer-events: none;           
+}
+
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+
+.mytable {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.mytable td, .mytable th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.mytable tr:nth-child(even){background-color: #f2f2f2;}
+
+.mytable tr:hover {background-color: #ddd;}
+
+.mytable th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+
     </style>
   </head>
   <body>
+      <h2>Contributions {% if t_code_desc %}from {{t_code_desc}} {% endif %} to {{filer.name}} in {{year}}</h2>
+      <svg></svg>
+      <table class="sortable mytable"><tr><th>Name</th><th>Address</th><th>Code</th><th>Amount</th></tr>
+      {% for report in reports %}
+      <tr>
+          <td>{{report.contributor_full_name}}</td>
+          <td>{% if report.contributor_address %}{{report.contributor_address}}, {{report.contributor_city}}, {{report.contributor_state}} {{report.contributor_zip}}{% endif %}</td>
+          <td>{{report.contributor_code}}</td>
+          <td>{{report.amount}}</td>
+
+      </tr>
+      {% endfor %}
+      </table>
+  </body>
     <script type="text/javascript">
         
     var xmlhttp = new XMLHttpRequest();
@@ -25,21 +86,25 @@
         console.log(json_resp);
         pie_chart(json_resp);
     };
-    xmlhttp.open("GET", "{% if t_code %}{% url 'json_filers_contributions_year_type' filer year t_code %}{% else %}{% url 'json_filers_contributions_year' filer year %}{% endif %}", true);
+    xmlhttp.open("GET", "{% if t_code %}{% url 'json_filers_contributions_year_type' filer.id year t_code %}{% else %}{% url 'json_filers_contributions_year' filer.id year %}{% endif %}", true);
     xmlhttp.send();    
         
-    var w = 600,                        //width
-    h = 600,                            //height
-    r = 300,                            //radius
+    var w = 400,                        //width
+    h = 400,                            //height
+    r = 200,                            //radius
     color = d3.scale.category20c();     //builtin range of colors
     data = [{"label":"one", "value":210}, 
             {"label":"two", "value":50}, 
             {"label":"three", "value":30}];
             
+    var div = d3.select("body").append("div")   
+    .attr("class", "tooltip")               
+    .style("opacity", 0);
+            
     pie_chart = function(data){
     
-    var vis = d3.select("body")
-        .append("svg:svg")              //create the SVG element inside the <body>
+    var vis = d3.select("svg")
+        //.append("svg:svg")              //create the SVG element inside the <body>
         .data([data])                   //associate our data with the document
         .attr("width", w)           //set the width and height of our visualization (these will be attributes of the <svg> tag
         .attr("height", h)
@@ -56,7 +121,21 @@
         .attr("class", "slice");    //allow us to style things in the slices (like text)
     arcs.append("svg:path")
         .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
-        .attr("d", arc);                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+        .attr("d", arc)                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+        .on("mouseover", function(d) {        
+            div.transition()        
+               .duration(200)       
+               .style("opacity", .9);       
+            div.html(d.data.desc) 
+               .style("left", (d3.event.pageX) + "px")      
+               .style("top", (d3.event.pageY - 28) + "px"); 
+            console.log(d);
+            })                  
+        .on("mouseout", function(d) {       
+            div.transition()        
+                .duration(500)      
+                .style("opacity", 0);   
+        });
     arcs.append("svg:text")                                     //add a label to each slice
         .attr("transform", function(d) {                    //set the label's origin to the center of the arc
                 //we have to make sure to set these before calling arc.centroid
@@ -69,5 +148,4 @@
     };
     //pie_chart(data);
     </script>
-  </body>
 </html>

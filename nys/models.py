@@ -97,6 +97,12 @@ class Report(models.Model):
     user_id = models.CharField(max_length=8, blank=True)
     record_creation_datetime = models.DateTimeField(null=True)
     
+    def contributor_full_name(self):
+        if self.corporation_name!="":
+            return self.corporation_name
+        else:
+            return "%s %s %s"%(self.contributor_first_name,self.contributor_mid_initial,self.contributor_last_name)
+    
     def to_dict(self):
         d={}
         d["filer_id"] = self.filer.filer_id
